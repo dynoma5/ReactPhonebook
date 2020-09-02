@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import PhoneService from './PhoneService';
 
 const Filter = ({ string, method }) => {
   return (
@@ -27,14 +27,14 @@ const PersonForm = ({ submitMethod, nameInput, nameOnChange, numberInput, number
   )
 }
 
-const Persons = ({ filterString, arrayList }) => {
+const Persons = ({ filterString, arrayList, deleteMethod }) => {
   return (
     <>
       {
         filterString.length === 0 ?
-          arrayList.map(person => <p key={person.name}>{person.name} {person.number}</p>) :
+          arrayList.map(person => <p key={person.id}>{person.name} {person.number} <button value={person.id} type="button" onClick={deleteMethod}>delete</button></p>) :
           arrayList.filter(person => person.name.toLowerCase().includes(filterString.toLowerCase()))
-            .map(person => <p key={person.name}>{person.name} {person.number}</p>)
+            .map(person => <p key={person.id}>{person.name} {person.number} <button value={person.id} type="button" onClick={deleteMethod}>delete</button></p>)
       }
     </>
   )
@@ -55,7 +55,16 @@ const App = () => {
       name: newName,
       number: newNumber
     }
-    persons.find(x => x.name === newName) === undefined ? setPersons(persons.concat(personObject)) : window.alert(`${newName} already exists`)
+
+    persons.find(x => x.name === newName) === undefined ?
+      PhoneService.create(personObject).then((result) => setPersons(persons.concat(result))) :
+      window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`) ?
+        PhoneService.update(persons.find(x => x.name === newName).id, { ...persons.find(x => x.name === newName), number: newNumber })
+          .then(() => PhoneService.getAll().then(result => setPersons(result))) :
+        console.log("Cancelled")
+
+    setNewName('')
+    setNewNumber('')
   }
 
   const handleNewName = (event) => {
@@ -69,14 +78,15 @@ const App = () => {
     setFilter(event.target.value)
   }
 
-  useEffect(()=>{
-    axios
-    .get('http://localhost:3001/persons')
-    .then(response =>{
-      setPersons(response.data)
-    })
-    
-  },[])
+  const deleteNumber = (event) => {
+    PhoneService
+      .remove(event.target.value)
+      .then(() => PhoneService.getAll().then(result => setPersons(result)))
+  }
+
+  useEffect(() => {
+    PhoneService.getAll().then(result => setPersons(result))
+  }, [])
 
   return (
     <div>
@@ -85,7 +95,7 @@ const App = () => {
       <h2>Add a new</h2>
       <PersonForm submitMethod={addName} nameInput={newName} nameOnChange={handleNewName} numberInput={newNumber} numberOnChange={handleNewNumber}></PersonForm>
       <h2>Numbers</h2>
-      <Persons filterString={filter} arrayList={persons}></Persons>
+      <Persons filterString={filter} arrayList={persons} deleteMethod={deleteNumber}></Persons>
     </div>
   )
 }
