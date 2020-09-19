@@ -124,6 +124,7 @@ const App = () => {
       .then(() =>
         PhoneService.getAll().then(result => setPersons(result)))
       .catch(error => {
+        console.log(error)
         setErrorMessage(`${person.name} has already been removed from the server.`)
       })
   }
