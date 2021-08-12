@@ -96,6 +96,9 @@ const App = () => {
           setPersons(persons.concat(result))
           setSuccessMessage(`Added ${newName}`)
           setTimeout(() => setSuccessMessage(null), 5000)
+        })
+        .catch(error =>{
+          setErrorMessage(`${error.response.data.error}`);
         }) :
       window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`) ?
         PhoneService.update(persons.find(x => x.name === newName).id, { ...persons.find(x => x.name === newName), number: newNumber })
